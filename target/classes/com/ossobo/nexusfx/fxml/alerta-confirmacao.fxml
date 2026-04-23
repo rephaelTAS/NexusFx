@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
+
+<VBox fx:id="container" xmlns="http://javafx.com/javafx/17"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.ossobo.nexusfx.ui.alerts.fxml.controller.ConfirmationController"
+      alignment="CENTER" spacing="15"
+      style="-fx-background-color: white; -fx-background-radius: 16; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 20, 0, 0, 10);">
+
+    <padding>
+        <Insets top="25" right="25" bottom="25" left="25"/>
+    </padding>
+
+    <VBox fx:id="contentArea" spacing="12" alignment="CENTER">
+
+        <!-- Ícone de confirmação (opcional, pode ser dinâmico) -->
+        <Label fx:id="lblIcon" text="❓" style="-fx-font-size: 42px;"/>
+
+        <!-- Título -->
+        <Label fx:id="lblTitle" style="-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;"
+               visible="false" managed="false"/>
+
+        <!-- Mensagem principal -->
+        <Label fx:id="lblMessage" wrapText="true" alignment="CENTER"
+               style="-fx-font-size: 14px; -fx-text-fill: #34495e;"
+               maxWidth="350"/>
+
+        <!-- Detalhes técnicos -->
+        <Label fx:id="lblDetails" wrapText="true" alignment="CENTER"
+               style="-fx-font-size: 12px; -fx-text-fill: #7f8c8d; -fx-font-style: italic;"
+               maxWidth="350" visible="false" managed="false"/>
+
+    </VBox>
+
+    <!-- Container de botões -->
+    <HBox fx:id="buttonContainer" alignment="CENTER" spacing="15"/>
+
+</VBox>

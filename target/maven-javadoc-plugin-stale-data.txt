@@ -1,0 +1,101 @@
+@options
+@packages
+@argfile
+--class-path
+'C:/Users/repha/.m2/repository/com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.jar;C:/Users/repha/.m2/repository/org/openjfx/javafx-controls/25.0.2/javafx-controls-25.0.2.jar;C:/Users/repha/.m2/repository/org/openjfx/javafx-fxml/25.0.2/javafx-fxml-25.0.2.jar;C:/Users/repha/.m2/repository/org/openjfx/javafx-graphics/25.0.2/javafx-graphics-25.0.2.jar;C:/Users/repha/.m2/repository/org/openjfx/javafx-base/25.0.2/javafx-base-25.0.2.jar;C:/Users/repha/.m2/repository/io/github/classgraph/classgraph/4.8.165/classgraph-4.8.165.jar;C:/Users/repha/.m2/repository/org/openjfx/javafx-media/25.0.2/javafx-media-25.0.2.jar;C:/Users/repha/.m2/repository/org/openjfx/javafx-web/25.0.2/javafx-web-25.0.2.jar;C:/Users/repha/.m2/repository/org/openjfx/javafx-web/25.0.2/javafx-web-25.0.2-win.jar;C:/Users/repha/.m2/repository/org/openjfx/jdk-jsobject/25.0.2/jdk-jsobject-25.0.2.jar;C:/Users/repha/.m2/repository/org/openjfx/jdk-jsobject/25.0.2/jdk-jsobject-25.0.2-win.jar;C:/Users/repha/.m2/repository/org/openjfx/javafx-swing/25.0.2/javafx-swing-25.0.2.jar;C:/Users/repha/.m2/repository/org/openjfx/javafx-swing/25.0.2/javafx-swing-25.0.2-win.jar;C:/Users/repha/.m2/repository/org/javassist/javassist/3.29.2-GA/javassist-3.29.2-GA.jar;C:/Users/repha/.m2/repository/com/google/guava/guava/33.2.1-jre/guava-33.2.1-jre.jar;C:/Users/repha/.m2/repository/com/google/guava/failureaccess/1.0.2/failureaccess-1.0.2.jar;C:/Users/repha/.m2/repository/com/google/guava/listenablefuture/9999.0-empty-to-avoid-conflict-with-guava/listenablefuture-9999.0-empty-to-avoid-conflict-with-guava.jar;C:/Users/repha/.m2/repository/org/checkerframework/checker-qual/3.42.0/checker-qual-3.42.0.jar;C:/Users/repha/.m2/repository/com/google/errorprone/error_prone_annotations/2.26.1/error_prone_annotations-2.26.1.jar;C:/Users/repha/.m2/repository/com/google/j2objc/j2objc-annotations/3.0.0/j2objc-annotations-3.0.0.jar;C:/Users/repha/.m2/repository/com/google/code/gson/gson/2.10.1/gson-2.10.1.jar;C:/Users/repha/.m2/repository/org/kordamp/ikonli/ikonli-javafx/12.3.1/ikonli-javafx-12.3.1.jar;C:/Users/repha/.m2/repository/org/kordamp/ikonli/ikonli-core/12.3.1/ikonli-core-12.3.1.jar;C:/Users/repha/.m2/repository/org/kordamp/bootstrapfx/bootstrapfx-core/0.4.0/bootstrapfx-core-0.4.0.jar;C:/Users/repha/.m2/repository/org/controlsfx/controlsfx/11.2.0/controlsfx-11.2.0.jar;C:/Users/repha/.m2/repository/net/synedra/validatorfx/0.4.0/validatorfx-0.4.0.jar;C:/Users/repha/.m2/repository/eu/hansolo/tilesfx/21.0.9/tilesfx-21.0.9.jar;C:/Users/repha/.m2/repository/eu/hansolo/fx/countries/21.0.17/countries-21.0.17.jar;C:/Users/repha/.m2/repository/eu/hansolo/fx/heatmap/21.0.5/heatmap-21.0.5.jar;C:/Users/repha/.m2/repository/eu/hansolo/toolboxfx/21.0.5/toolboxfx-21.0.5.jar;C:/Users/repha/.m2/repository/eu/hansolo/toolbox/21.0.9/toolbox-21.0.9.jar;C:/Users/repha/.m2/repository/org/kordamp/ikonli/ikonli-fontawesome5-pack/12.3.1/ikonli-fontawesome5-pack-12.3.1.jar;C:/Users/repha/.m2/repository/org/kordamp/ikonli/ikonli-material2-pack/12.3.1/ikonli-material2-pack-12.3.1.jar;C:/Users/repha/.m2/repository/org/kordamp/ikonli/ikonli-feather-pack/12.3.1/ikonli-feather-pack-12.3.1.jar'
+--module-path
+'C:/Users/repha/.m2/repository/org/openjfx/javafx-controls/25.0.2/javafx-controls-25.0.2-win.jar;C:/Users/repha/.m2/repository/org/openjfx/javafx-fxml/25.0.2/javafx-fxml-25.0.2-win.jar;C:/Users/repha/.m2/repository/org/openjfx/javafx-media/25.0.2/javafx-media-25.0.2-win.jar;C:/Users/repha/.m2/repository/org/openjfx/javafx-graphics/25.0.2/javafx-graphics-25.0.2-win.jar;C:/Users/repha/.m2/repository/org/reflections/reflections/0.10.2/reflections-0.10.2.jar;C:/Users/repha/.m2/repository/org/openjfx/javafx-base/25.0.2/javafx-base-25.0.2-win.jar;D:/03_Desenvolvimento/11_Programação/IdeaProjects/01_Progetos/01_Novos_Progetos/01_Laboratorio/Back_End/Java/NexusFX/target/classes;C:/Users/repha/.m2/repository/org/slf4j/slf4j-api/2.0.16/slf4j-api-2.0.16.jar'
+--patch-module
+com.ossobo.nexusfx='D:/03_Desenvolvimento/11_Programação/IdeaProjects/01_Progetos/01_Novos_Progetos/01_Laboratorio/Back_End/Java/NexusFX/src/main/java'
+-encoding
+'UTF-8'
+-protected
+--release
+25
+--module-source-path
+'D:/03_Desenvolvimento/11_Programação/IdeaProjects/01_Progetos/01_Novos_Progetos/01_Laboratorio/Back_End/Java/NexusFX/target/apidocs/src'
+--add-modules
+javafx.controls,javafx.fxml
+-author
+-bottom
+'Copyright &#169; 2026. All rights reserved.'
+-charset
+'UTF-8'
+-d
+'D:/03_Desenvolvimento/11_Programação/IdeaProjects/01_Progetos/01_Novos_Progetos/01_Laboratorio/Back_End/Java/NexusFX/target/apidocs'
+-docencoding
+'UTF-8'
+-Xdoclint:none
+-doctitle
+'NexusFX 8.0.3 API'
+-use
+-version
+-windowtitle
+'NexusFX 8.0.3 API'
+com.ossobo.nexusfx.AlertSystem.core
+com.ossobo.nexusfx.AlertSystem.core.animation
+com.ossobo.nexusfx.AlertSystem.core.position
+com.ossobo.nexusfx.AlertSystem.core.ui
+com.ossobo.nexusfx.AlertSystem.fx
+com.ossobo.nexusfx.AlertSystem.model
+com.ossobo.nexusfx.AlertSystem.sound
+com.ossobo.nexusfx.AlertSystem
+com.ossobo.nexusfx.bootstrap
+com.ossobo.nexusfx.core
+com.ossobo.nexusfx.di.annotations
+com.ossobo.nexusfx.di
+com.ossobo.nexusfx.di.exceptions
+com.ossobo.nexusfx.di.scopes
+com.ossobo.nexusfx.exceptions
+com.ossobo.nexusfx.ImageManager.image
+com.ossobo.nexusfx.ImageManager
+com.ossobo.nexusfx.Modaldialog
+com.ossobo.nexusfx
+com.ossobo.nexusfx.notifications.animation
+com.ossobo.nexusfx.notifications.builder
+com.ossobo.nexusfx.notifications.descriptor
+com.ossobo.nexusfx.notifications.exceptions
+com.ossobo.nexusfx.notifications.manager
+com.ossobo.nexusfx.notifications.model
+com.ossobo.nexusfx.notifications.position
+com.ossobo.nexusfx.notifications.presenter
+com.ossobo.nexusfx.notifications.renderer
+com.ossobo.nexusfx.notifications.types
+com.ossobo.nexusfx.OwnerWindowProvider
+com.ossobo.nexusfx.resources.api
+com.ossobo.nexusfx.resources.bootstrap
+com.ossobo.nexusfx.resources.cache
+com.ossobo.nexusfx.resources.descriptor
+com.ossobo.nexusfx.resources.enums
+com.ossobo.nexusfx.resources.excecoes
+com.ossobo.nexusfx.resources.guard
+com.ossobo.nexusfx.resources.loader
+com.ossobo.nexusfx.resources.registry
+com.ossobo.nexusfx.resources.resolver
+com.ossobo.nexusfx.view.design
+com.ossobo.nexusfx.view.design.internal
+com.ossobo.nexusfx.view.design.themes.neumorphic
+com.ossobo.nexusfx.view.exceptios
+com.ossobo.nexusfx.view.loader
+com.ossobo.nexusfx.view.refresh
+com.ossobo.nexusfx.view.registry
+com.ossobo.nexusfx.view
+com.ossobo.nexusfx.view.views.config
+com.ossobo.nexusfx.view.views
+'D:/03_Desenvolvimento/11_Programação/IdeaProjects/01_Progetos/01_Novos_Progetos/01_Laboratorio/Back_End/Java/NexusFX/src/main/java/module-info.java'
+D:\03_Desenvolvimento\11_Programação\IdeaProjects\01_Progetos\01_Novos_Progetos\01_Laboratorio\Back_End\Java\NexusFX\target\apidocs\allclasses-index.html = 1776956320503
+D:\03_Desenvolvimento\11_Programação\IdeaProjects\01_Progetos\01_Novos_Progetos\01_Laboratorio\Back_End\Java\NexusFX\target\apidocs\allpackages-index.html = 1776956320510
+D:\03_Desenvolvimento\11_Programação\IdeaProjects\01_Progetos\01_Novos_Progetos\01_Laboratorio\Back_End\Java\NexusFX\target\apidocs\constant-values.html = 1776956318962
+D:\03_Desenvolvimento\11_Programação\IdeaProjects\01_Progetos\01_Novos_Progetos\01_Laboratorio\Back_End\Java\NexusFX\target\apidocs\deprecated-list.html = 1776956320382
+D:\03_Desenvolvimento\11_Programação\IdeaProjects\01_Progetos\01_Novos_Progetos\01_Laboratorio\Back_End\Java\NexusFX\target\apidocs\element-list = 1776956318390
+D:\03_Desenvolvimento\11_Programação\IdeaProjects\01_Progetos\01_Novos_Progetos\01_Laboratorio\Back_End\Java\NexusFX\target\apidocs\help-doc.html = 1776956320670
+D:\03_Desenvolvimento\11_Programação\IdeaProjects\01_Progetos\01_Novos_Progetos\01_Laboratorio\Back_End\Java\NexusFX\target\apidocs\index-all.html = 1776956320655
+D:\03_Desenvolvimento\11_Programação\IdeaProjects\01_Progetos\01_Novos_Progetos\01_Laboratorio\Back_End\Java\NexusFX\target\apidocs\index.html = 1776956320663
+D:\03_Desenvolvimento\11_Programação\IdeaProjects\01_Progetos\01_Novos_Progetos\01_Laboratorio\Back_End\Java\NexusFX\target\apidocs\member-search-index.js = 1776956320530
+D:\03_Desenvolvimento\11_Programação\IdeaProjects\01_Progetos\01_Novos_Progetos\01_Laboratorio\Back_End\Java\NexusFX\target\apidocs\module-search-index.js = 1776956320514
+D:\03_Desenvolvimento\11_Programação\IdeaProjects\01_Progetos\01_Novos_Progetos\01_Laboratorio\Back_End\Java\NexusFX\target\apidocs\overview-tree.html = 1776956320374
+D:\03_Desenvolvimento\11_Programação\IdeaProjects\01_Progetos\01_Novos_Progetos\01_Laboratorio\Back_End\Java\NexusFX\target\apidocs\package-search-index.js = 1776956320517
+D:\03_Desenvolvimento\11_Programação\IdeaProjects\01_Progetos\01_Novos_Progetos\01_Laboratorio\Back_End\Java\NexusFX\target\apidocs\search.html = 1776956320659
+D:\03_Desenvolvimento\11_Programação\IdeaProjects\01_Progetos\01_Novos_Progetos\01_Laboratorio\Back_End\Java\NexusFX\target\apidocs\serialized-form.html = 1776956318989
+D:\03_Desenvolvimento\11_Programação\IdeaProjects\01_Progetos\01_Novos_Progetos\01_Laboratorio\Back_End\Java\NexusFX\target\apidocs\tag-search-index.js = 1776956320533
+D:\03_Desenvolvimento\11_Programação\IdeaProjects\01_Progetos\01_Novos_Progetos\01_Laboratorio\Back_End\Java\NexusFX\target\apidocs\type-search-index.js = 1776956320519
