@@ -1,4 +1,4 @@
-package com.ossobo.nexusfx.ImageManager.config;
+package packt.frameworks.nexusfx.ImageManager.config;
 
 import java.net.URL;
 import java.util.Objects;

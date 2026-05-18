@@ -16,6 +16,7 @@ module com.ossobo.nexusfx {
     requires org.slf4j;
     requires java.sql;
     requires org.reflections;
+    requires io.github.classgraph;
 
     // =============================================
     // EXPORTS - CORE (com.ossobo.nexusfx)
@@ -94,14 +95,14 @@ module com.ossobo.nexusfx {
     // =============================================
     exports com.ossobo.nexusfx.view;                     // ViewManager.java
     exports com.ossobo.nexusfx.view.design;              // DesignSystem, StyleDefinition
-    exports com.ossobo.nexusfx.view.design.internal;     // CSSEngine, CSSLoader
-    exports com.ossobo.nexusfx.view.design.themes.neumorphic; // NeumorphicUISystem
     exports com.ossobo.nexusfx.view.exceptios;           // ViewEngineException
     exports com.ossobo.nexusfx.view.loader;              // FXMLService
-    exports com.ossobo.nexusfx.view.refresh;             // RefreshManager, RefreshableController
-    exports com.ossobo.nexusfx.view.registry;            // ViewRegistry
-    exports com.ossobo.nexusfx.view.views;               // LoadedView
-    exports com.ossobo.nexusfx.view.views.config;        // FXMLConfig
+    exports com.ossobo.nexusfx.view.refresh;             // ViewRegistry
+
+    exports com.ossobo.nexusfx.di.scopes.enums;
+    // LoadedView
+    exports com.ossobo.nexusfx.view.config;
+    opens com.ossobo.nexusfx.AlertSystem.fx to javafx.fxml;
 
     // =============================================
     // ABERTURA PARA REFLEXÃO (FXML)

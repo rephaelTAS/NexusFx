@@ -7,7 +7,7 @@
 <?import java.net.URL?>
 <VBox fx:id="containerPrincipal" xmlns="http://javafx.com/javafx/17"
       xmlns:fx="http://javafx.com/fxml/1"
-      fx:controller="packt.frameworks.nexusfx.AlertSystem.fx.AlertaController"
+      fx:controller="com.ossobo.nexusfx.AlertSystem.fx.AlertaController"
       styleClass="alerta-semimodal"
       prefWidth="380" prefHeight="180"
       spacing="10">
@@ -45,8 +45,4 @@
                 styleClass="botao-primario"/>
     </HBox>
 
-    <stylesheets>
-        <URL value="@../style/alertas.css"/>
-        <URL value="@../style/alerta-semimodal.css"/>
-    </stylesheets>
 </VBox>

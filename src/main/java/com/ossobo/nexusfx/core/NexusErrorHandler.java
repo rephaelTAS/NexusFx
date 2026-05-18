@@ -205,7 +205,7 @@ public class NexusErrorHandler {
                 }
 
                 switch (level) {
-                    case CRITICAL -> NexusFX.alerts().critico(message.getTitle(), corpo, message.getContext());
+                    case CRITICAL -> NexusFX.alerts().critical(message.getTitle(), corpo, message.getContext());
                     case ERROR -> NexusFX.alerts().erro(message.getTitle(), corpo, message.getContext());
                     case WARN -> NexusFX.alerts().warn(message.getTitle(), corpo, message.getContext());
                     case INFO -> NexusFX.alerts().info(message.getTitle(), corpo, message.getContext());
@@ -217,7 +217,7 @@ public class NexusErrorHandler {
 
         void fallback(Exception originalError, String contexto, Exception handlerError) {
             try {
-                NexusFX.alerts().critico(
+                NexusFX.alerts().critical(
                         "Erro no Sistema",
                         "Ocorreu um erro crítico. Contate o suporte.",
                         "NexusErrorHandler"

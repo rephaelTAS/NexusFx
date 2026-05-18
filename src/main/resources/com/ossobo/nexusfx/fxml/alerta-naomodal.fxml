@@ -7,7 +7,7 @@
 <?import java.net.URL?>
 <VBox fx:id="containerPrincipal" xmlns="http://javafx.com/javafx/17"
       xmlns:fx="http://javafx.com/fxml/1"
-      fx:controller="packt.frameworks.nexusfx.AlertSystem.fx.AlertaController"
+      fx:controller="com.ossobo.nexusfx.AlertSystem.fx.AlertaController"
       styleClass="alerta-naomodal"
       prefWidth="350" prefHeight="140"
       spacing="8">
@@ -37,8 +37,4 @@
                text="Sistema"/>
     </HBox>
 
-    <stylesheets>
-        <URL value="@../style/alertas.css"/>
-        <URL value="@../style/alerta-naomodal.css"/>
-    </stylesheets>
 </VBox>

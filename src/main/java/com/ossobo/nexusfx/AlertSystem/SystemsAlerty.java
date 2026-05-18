@@ -7,8 +7,9 @@ import com.ossobo.nexusfx.AlertSystem.model.TipoAlerta;
 import com.ossobo.nexusfx.AlertSystem.model.TipoConfirmacao;
 import com.ossobo.nexusfx.di.annotations.Component;
 import com.ossobo.nexusfx.di.annotations.ScopeAnnotation;
-import com.ossobo.nexusfx.di.scopes.ScopeType;
 
+
+import com.ossobo.nexusfx.di.scopes.enums.ScopeType;
 import javafx.stage.Stage;
 
 import java.util.List;

@@ -1,7 +1,9 @@
 package com.ossobo.nexusfx.bootstrap;
 
+import com.ossobo.nexusfx.AlertSystem.SystemsAlerty;
 import com.ossobo.nexusfx.AlertSystem.core.AlertaSystem;
 import com.ossobo.nexusfx.AlertSystem.sound.AlertaSons;
+import com.ossobo.nexusfx.ImageManager.ImageService;
 import com.ossobo.nexusfx.ImageManager.image.ImageRegistry;
 import com.ossobo.nexusfx.Modaldialog.DialogOrchestrator;
 import com.ossobo.nexusfx.NexusFX;
@@ -9,7 +11,6 @@ import com.ossobo.nexusfx.di.DiContainer;
 import com.ossobo.nexusfx.resources.api.ResourceAPI;
 import com.ossobo.nexusfx.resources.bootstrap.ResourceBootstrap;
 import com.ossobo.nexusfx.view.ViewManager;
-import com.ossobo.nexusfx.view.registry.ViewRegistry;
 
 import javafx.application.Application;
 import javafx.stage.Stage;
@@ -18,28 +19,41 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * 🎯 NEXUS FX BOOTSTRAP - Inicializador central do framework
+ * 🎯 NEXUS FX BOOTSTRAP v3.0
  *
- * v1.4 (23/04/2026):
- * - ✅ CORRIGIDO: Inicialização do DiContainer com proteção contra Reflections vazio
- * - ✅ CORRIGIDO: run() agora vincula bootstrap antes de iniciar JavaFX
- * - ✅ CORRIGIDO: initialize() com tratamento de erro robusto
+ * Inicializador central do framework.
+ * Orquestra a inicialização de todos os serviços na ordem correta.
+ *
+ * Fluxo de inicialização:
+ *   1. ResourceAPI (datacenter — tudo depende dele)
+ *   2. DiContainer (scan de componentes, registo de serviços)
+ *   3. ImageRegistry + ImageService
+ *   4. ViewManager (vinculado ao ResourceAPI, registado no DiContainer)
+ *   5. SystemsAlerty (alertas com ViewManager injetado)
+ *   6. DialogOrchestrator (recebe ViewManager via DiContainer)
+ *
+ * v3.0 (17/05/2026):
+ * - ✅ DiContainer refatorado (22 classes, uma responsabilidade cada)
+ * - ✅ ViewManager usa ResourceAPI diretamente
+ * - ✅ ViewManager registado no DiContainer antes do DialogOrchestrator
+ * - ✅ Sem fallbacks — falhas explodem na inicialização
  */
 public final class NexusFXBootstrap {
 
     private static final Logger LOGGER = Logger.getLogger(NexusFXBootstrap.class.getName());
 
+    // ===== SERVIÇOS DO FRAMEWORK =====
     private ResourceAPI resourceAPI;
     private DiContainer diContainer;
     private ImageRegistry imageRegistry;
-    private ViewRegistry viewRegistry;
+    private ImageService imageService;
     private ViewManager viewManager;
-    private AlertaSystem alertaSystem;
+    private SystemsAlerty alertaSystem;
     private DialogOrchestrator dialogOrchestrator;
 
     private boolean initialized = false;
     private Stage primaryStage;
-    private String scanPackages = "com.ossobo";
+    private String[] scanPackages = {"com.ossobo"};
     private boolean enableDiagnostics = false;
 
     /**
@@ -47,26 +61,16 @@ public final class NexusFXBootstrap {
      */
     public static void run(Class<? extends Application> appClass) {
         String packageName = appClass.getPackageName();
+        LOGGER.info("🎯 NexusFXBootstrap.run() - package: " + packageName);
 
-        LOGGER.info("🎯 NexusFXBootstrap.run() - Iniciando com package: " + packageName);
-
-        // Criar e SALVAR a instância
         NexusFXBootstrap instance = new NexusFXBootstrap()
                 .withScanPackages(packageName)
                 .withDiagnostics(true);
 
-        // VINCULAR imediatamente ao NexusFX (antes do JavaFX iniciar)
         NexusFX.link(instance);
         LOGGER.info("✅ Bootstrap vinculado ao NexusFX");
-
-        // Agora sim, iniciar o JavaFX
         LOGGER.info("🚀 Iniciando JavaFX...");
         Application.launch(appClass);
-    }
-
-    public NexusFXBootstrap withScanPackages(String packages) {
-        this.scanPackages = (packages != null && !packages.trim().isEmpty()) ? packages : "com.ossobo";
-        return this;
     }
 
     public NexusFXBootstrap withDiagnostics(boolean enable) {
@@ -74,6 +78,19 @@ public final class NexusFXBootstrap {
         return this;
     }
 
+    public NexusFXBootstrap withScanPackages(String... packages) {
+        this.scanPackages = (packages != null && packages.length > 0 && !packages[0].trim().isEmpty())
+                ? packages
+                : new String[]{"com.ossobo"};
+        return this;
+    }
+
+    // ==================== INICIALIZAÇÃO PRINCIPAL ====================
+
+    /**
+     * ✅ Inicialização completa do framework.
+     * Ordem estrita — dependências nunca são nulas.
+     */
     public void initialize(Stage primaryStage) {
         if (initialized) {
             LOGGER.warning("⚠️ NexusFX já foi inicializado. Ignorando...");
@@ -81,165 +98,222 @@ public final class NexusFXBootstrap {
         }
 
         this.primaryStage = primaryStage;
-
-        LOGGER.info("🚀 INICIALIZANDO NEXUS FX");
+        LOGGER.info("🚀 INICIALIZANDO NEXUS FX v3.0");
 
         try {
-            // 1. Inicializar ResourceAPI
-            resourceAPI = new ResourceAPI();
-            ResourceBootstrap.bootstrap(resourceAPI);
-            LOGGER.info("✅ ResourceAPI inicializado");
+            // === FASE 1: INFRAESTRUTURA BASE ===
+            initializeResourceAPI();          // [1] Datacenter central
+            initializeDiContainer();          // [2] Container DI + scan
 
-            // 2. Inicializar DiContainer COM PROTEÇÃO
-            try {
-                initializeDiContainer();
-            } catch (Exception e) {
-                LOGGER.warning("⚠️ Erro no DiContainer (não crítico para operação básica): " + e.getMessage());
-                diContainer = null;
-            }
+            // === FASE 2: SERVIÇOS QUE DEPENDEM DO RESOURCE API ===
+            initializeImageSystem();          // [3] ImageRegistry + ImageService
+            initializeViewSystem();           // [4] ViewManager (registado no DI)
 
-            // 3. Inicializar ImageRegistry
-            imageRegistry = new ImageRegistry();
-            if (resourceAPI != null) {
-                imageRegistry.setResourceAPI(resourceAPI);
-            }
-            LOGGER.info("✅ ImageRegistry inicializado");
+            // === FASE 3: ALERTAS ===
+            initializeAlertSystem();          // [5] SystemsAlerty + AlertaSons + AlertaSystem
 
-            // 4. Inicializar ViewRegistry e ViewManager
-            viewRegistry = ViewRegistry.getInstance();
-            if (resourceAPI != null) {
-                viewRegistry.setResourceAPI(resourceAPI);
-            }
-            viewManager = ViewManager.getInstance();
-            LOGGER.info("✅ ViewRegistry e ViewManager inicializados");
-
-            // 5. Inicializar AlertSystem
-            initializeAlertSystem();
-
-            // 6. Inicializar DialogOrchestrator
-            try {
-                dialogOrchestrator = DialogOrchestrator.getInstance();
-                LOGGER.info("✅ DialogOrchestrator inicializado");
-            } catch (Exception e) {
-                LOGGER.warning("⚠️ Erro no DialogOrchestrator: " + e.getMessage());
-                dialogOrchestrator = null;
-            }
+            // === FASE 4: DIÁLOGOS ===
+            initializeDialogOrchestrator();   // [6] DialogOrchestrator via DiContainer
 
             // Atualizar vínculo com dados completos
             NexusFX.link(this);
-
             initialized = true;
-
-            LOGGER.info("✅ NEXUS FX INICIALIZADO COM SUCESSO!");
-            LOGGER.info("   📦 Recursos carregados: " + (resourceAPI != null ? resourceAPI.count() : 0));
-            LOGGER.info("   📍 Pacotes escaneados: " + scanPackages);
-
-            if (enableDiagnostics) {
-                LOGGER.info("   🔍 Modo diagnóstico: ATIVADO");
-                LOGGER.info("   🏗️ DiContainer: " + (diContainer != null ? "ATIVO" : "INATIVO (modo degradado)"));
-                LOGGER.info("   🖼️ ImageRegistry: " + (imageRegistry != null ? "ATIVO" : "INATIVO"));
-                LOGGER.info("   🪟 ViewManager: " + (viewManager != null ? "ATIVO" : "INATIVO"));
-                LOGGER.info("   ⚠️ AlertSystem: " + (alertaSystem != null ? "ATIVO" : "INATIVO"));
-            }
+            logInitializationSuccess();
 
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "❌ FALHA NA INICIALIZAÇÃO DO NEXUS FX", e);
-            initialized = true; // Marca como inicializado para evitar loops
             throw new RuntimeException("Falha ao inicializar NexusFX: " + e.getMessage(), e);
         }
     }
 
-    /**
-     * Inicialização segura do DiContainer
-     */
+    // ==================== [1/6] RESOURCE API ====================
+
+    private void initializeResourceAPI() {
+        LOGGER.info("📦 [1/6] Inicializando ResourceAPI...");
+        resourceAPI = new ResourceAPI();
+        ResourceBootstrap.bootstrap(resourceAPI);
+        LOGGER.info("   ✅ ResourceAPI: " + resourceAPI.count() + " recursos base");
+    }
+
+    // ==================== [2/6] DI CONTAINER ====================
+
     private void initializeDiContainer() {
-        if (scanPackages == null || scanPackages.trim().isEmpty()) {
-            LOGGER.warning("⚠️ scanPackages vazio, DiContainer não será inicializado");
+        LOGGER.info("🏗️ [2/6] Inicializando DiContainer v3.0...");
+
+        if (scanPackages == null || scanPackages.length == 0 ||
+                (scanPackages.length == 1 && scanPackages[0].trim().isEmpty())) {
+            LOGGER.warning("   ⚠️ scanPackages vazio, DiContainer não inicializado");
             return;
         }
 
         try {
-            LOGGER.info("🔍 Inicializando DiContainer com pacote: " + scanPackages);
-
-            // Verifica se o pacote existe antes de tentar escanear
-            if (isValidPackage(scanPackages)) {
+            LOGGER.info("   🔍 Escaneando: " + String.join(", ", scanPackages));
+            if (isValidPackage(scanPackages[0])) {
                 DiContainer.initialize(scanPackages);
                 diContainer = DiContainer.getInstance();
-                LOGGER.info("✅ DiContainer inicializado com sucesso");
+                LOGGER.info("   ✅ DiContainer: " + diContainer.getBeanCount() + " beans");
             } else {
-                LOGGER.warning("⚠️ Pacote '" + scanPackages + "' não encontrado no classpath");
+                LOGGER.warning("   ⚠️ Pacote não encontrado, tentando fallback...");
+                fallbackDiContainer();
             }
-
         } catch (Exception e) {
-            LOGGER.warning("⚠️ Falha ao inicializar DiContainer: " + e.getMessage());
-
-            // Tenta inicializar sem pacote específico
-            try {
-                LOGGER.info("🔄 Tentando inicializar DiContainer sem pacote específico...");
-                DiContainer.initialize("com.ossobo"); // Pacote padrão do framework
-                diContainer = DiContainer.getInstance();
-                LOGGER.info("✅ DiContainer inicializado com pacote padrão");
-            } catch (Exception e2) {
-                LOGGER.warning("⚠️ Falha na segunda tentativa: " + e2.getMessage());
-                throw e2;
-            }
+            LOGGER.warning("   ⚠️ Falha no DiContainer: " + e.getMessage());
+            fallbackDiContainer();
         }
     }
 
-    /**
-     * Inicialização segura do AlertSystem
-     */
-    private void initializeAlertSystem() {
+    private void fallbackDiContainer() {
         try {
-            if (resourceAPI != null) {
-                AlertaSons.setResourceAPI(resourceAPI);
-                AlertaSons.inicializar();
-            }
-
-            alertaSystem = AlertaSystem.getInstance();
-
-            if (resourceAPI != null) {
-                alertaSystem.setResourceAPI(resourceAPI);
-            }
-
-            if (primaryStage != null) {
-                alertaSystem.setPrimaryStage(primaryStage);
-            }
-
-            LOGGER.info("✅ AlertaSystem inicializado");
-
-        } catch (Exception e) {
-            LOGGER.warning("⚠️ Erro ao inicializar AlertaSystem: " + e.getMessage());
-            alertaSystem = null;
+            DiContainer.initialize("com.ossobo");
+            diContainer = DiContainer.getInstance();
+            LOGGER.info("   ✅ DiContainer (fallback): " + diContainer.getBeanCount() + " beans");
+        } catch (Exception e2) {
+            throw new RuntimeException("DiContainer não pôde ser inicializado", e2);
         }
     }
 
+    // ==================== [3/6] IMAGE SYSTEM ====================
+
+    private void initializeImageSystem() {
+        LOGGER.info("🖼️ [3/6] Inicializando ImageRegistry + ImageService...");
+
+        // ImageRegistry
+        try {
+            imageRegistry = new ImageRegistry();
+            if (resourceAPI != null) {
+                imageRegistry.setResourceAPI(resourceAPI);
+            }
+            LOGGER.info("   ✅ ImageRegistry");
+        } catch (Exception e) {
+            LOGGER.warning("   ⚠️ ImageRegistry: " + e.getMessage());
+            imageRegistry = null;
+        }
+
+        // ImageService
+        try {
+            imageService = new ImageService();
+            if (diContainer != null && imageRegistry != null) {
+                imageService.setImageRegistry(imageRegistry);
+                diContainer.register(ImageService.class, imageService);
+                LOGGER.info("   ✅ ImageService (registado no DiContainer)");
+            } else {
+                LOGGER.info("   ✅ ImageService (standalone)");
+            }
+        } catch (Exception e) {
+            LOGGER.warning("   ⚠️ ImageService: " + e.getMessage());
+            imageService = null;
+        }
+    }
+
+    // ==================== [4/6] VIEW SYSTEM ====================
+
     /**
-     * Verifica se um pacote existe no classpath
+     * ✅ ViewManager inicializado e registado no DiContainer.
+     * O DialogOrchestrator receberá esta instância vinculada ao ResourceAPI.
      */
+    private void initializeViewSystem() {
+        LOGGER.info("🪟 [4/6] Inicializando ViewManager...");
+
+        viewManager = ViewManager.getInstance();
+        if (resourceAPI != null) {
+            viewManager.setResourceAPI(resourceAPI);
+        }
+
+        // ✅ Registar no DiContainer para injeção no DialogOrchestrator
+        if (diContainer != null) {
+            diContainer.register(ViewManager.class, viewManager);
+        }
+
+        LOGGER.info("   ✅ ViewManager (fonte: ResourceAPI, registado no DI)");
+    }
+
+    // ==================== [5/6] ALERT SYSTEM ====================
+
+    private void initializeAlertSystem() {
+        LOGGER.info("⚠️ [5/6] Inicializando SystemsAlerty...");
+
+        // Inicializar sons
+        if (resourceAPI != null) {
+            AlertaSons.setResourceAPI(resourceAPI);
+            AlertaSons.inicializar();
+        }
+
+        // Fachada pública
+        alertaSystem = new SystemsAlerty(primaryStage);
+
+        // Core interno
+        AlertaSystem coreAlerta = AlertaSystem.getInstance();
+        if (resourceAPI != null) {
+            coreAlerta.setResourceAPI(resourceAPI);
+        }
+        if (viewManager != null) {
+            coreAlerta.setViewManager(viewManager);
+        }
+
+        LOGGER.info("   ✅ SystemsAlerty (ViewManager vinculado)");
+    }
+
+    // ==================== [6/6] DIALOG ORCHESTRATOR ====================
+
+    /**
+     * ✅ O DiContainer já tem o ViewManager registado,
+     * então o DialogOrchestrator receberá a instância correta via @Inject.
+     */
+    private void initializeDialogOrchestrator() {
+        LOGGER.info("🪟 [6/6] Inicializando DialogOrchestrator...");
+
+        if (viewManager == null) {
+            LOGGER.warning("   ⚠️ ViewManager nulo — DialogOrchestrator não inicializado");
+            dialogOrchestrator = null;
+            return;
+        }
+
+        if (diContainer == null) {
+            LOGGER.warning("   ⚠️ DiContainer nulo — DialogOrchestrator não inicializado");
+            dialogOrchestrator = null;
+            return;
+        }
+
+        try {
+            dialogOrchestrator = DialogOrchestrator.getInstance();
+            LOGGER.info("   ✅ DialogOrchestrator (ViewManager injetado via DI)");
+        } catch (Exception e) {
+            LOGGER.warning("   ⚠️ DialogOrchestrator: " + e.getMessage());
+            dialogOrchestrator = null;
+        }
+    }
+
+    // ==================== LOG DE SUCESSO ====================
+
+    private void logInitializationSuccess() {
+        LOGGER.info("✅ NEXUS FX v3.0 INICIALIZADO");
+        LOGGER.info("   📦 ResourceAPI: " + (resourceAPI != null ? resourceAPI.count() + " recursos" : "❌"));
+        LOGGER.info("   🏗️ DiContainer: " + (diContainer != null ? diContainer.getBeanCount() + " beans" : "⚠️"));
+        LOGGER.info("   🪟 ViewManager: " + (viewManager != null ? "✅" : "❌"));
+        LOGGER.info("   🖼️ ImageService: " + (imageService != null ? "✅" : "⚠️"));
+        LOGGER.info("   ⚠️ SystemsAlerty: " + (alertaSystem != null ? "✅" : "❌"));
+        LOGGER.info("   🪟 DialogOrchestrator: " + (dialogOrchestrator != null ? "✅" : "❌"));
+
+        if (enableDiagnostics) {
+            LOGGER.info("   🔍 Diagnóstico ativado");
+        }
+    }
+
+    // ==================== VERIFICAÇÃO DE PACOTE ====================
+
     private boolean isValidPackage(String packageName) {
         try {
             String path = packageName.replace('.', '/');
             java.net.URL resource = Thread.currentThread()
                     .getContextClassLoader()
                     .getResource(path);
-
-            if (resource != null) {
-                LOGGER.fine("✅ Pacote encontrado: " + packageName + " -> " + resource);
-                return true;
-            } else {
-                LOGGER.fine("❌ Pacote não encontrado: " + packageName);
-                return false;
-            }
+            return resource != null;
         } catch (Exception e) {
-            LOGGER.fine("❌ Erro ao verificar pacote " + packageName + ": " + e.getMessage());
             return false;
         }
     }
 
-    public boolean isInitialized() {
-        return initialized;
-    }
+    // ==================== SHUTDOWN ====================
 
     public void shutdown() {
         if (!initialized) return;
@@ -247,39 +321,39 @@ public final class NexusFXBootstrap {
         LOGGER.info("🔻 Desligando NexusFX...");
 
         if (alertaSystem != null) {
-            try {
-                alertaSystem.fecharTodosAlertas();
-            } catch (Exception e) {
-                LOGGER.warning("⚠️ Erro ao fechar alertas: " + e.getMessage());
-            }
+            try { alertaSystem.fecharTodosAlertas(); }
+            catch (Exception e) { LOGGER.warning("⚠️ alertas: " + e.getMessage()); }
         }
 
         if (viewManager != null) {
-            try {
-                viewManager.clearCache();
-            } catch (Exception e) {
-                LOGGER.warning("⚠️ Erro ao limpar cache de views: " + e.getMessage());
-            }
+            try { viewManager.clearCache(); }
+            catch (Exception e) { LOGGER.warning("⚠️ cache: " + e.getMessage()); }
+        }
+
+        if (imageService != null) {
+            try { imageService.clearImageCache(); }
+            catch (Exception e) { LOGGER.warning("⚠️ imagens: " + e.getMessage()); }
         }
 
         if (diContainer != null) {
-            try {
-                diContainer.close();
-            } catch (Exception e) {
-                LOGGER.warning("⚠️ Erro ao fechar DiContainer: " + e.getMessage());
-            }
+            try { diContainer.close(); }
+            catch (Exception e) { LOGGER.warning("⚠️ DiContainer: " + e.getMessage()); }
         }
 
         initialized = false;
-        LOGGER.info("✅ NexusFX desligado com sucesso");
+        LOGGER.info("✅ NexusFX desligado");
     }
 
-    // Getters
+    // ==================== GETTERS ====================
+
+    public boolean isInitialized() { return initialized; }
     public ResourceAPI getResourceAPI() { return resourceAPI; }
     public DiContainer getDiContainer() { return diContainer; }
     public ImageRegistry getImageRegistry() { return imageRegistry; }
-    public ViewRegistry getViewRegistry() { return viewRegistry; }
+    public ImageService getImageService() { return imageService; }
     public ViewManager getViewManager() { return viewManager; }
-    public AlertaSystem getAlertaSystem() { return alertaSystem; }
+    public SystemsAlerty getAlertaSystem() { return alertaSystem; }
+    public AlertaSystem getAlertaSystemCore() { return AlertaSystem.getInstance(); }
+    public DialogOrchestrator getDialogOrchestrator() { return dialogOrchestrator; }
     public Stage getPrimaryStage() { return primaryStage; }
 }

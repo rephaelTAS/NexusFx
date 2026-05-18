@@ -5,14 +5,16 @@ import javafx.geometry.Rectangle2D;
 import javafx.scene.Node;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Region;
-import javafx.scene.layout.VBox;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
 import javafx.stage.Window;
 
 /**
- * Responsável pelo posicionamento inteligente dos alertas
- * Coesão forte - apenas lógica de posicionamento
+ * Responsável pelo posicionamento inteligente dos alertas.
+ * Coesão forte - apenas lógica de posicionamento.
+ *
+ * v1.1 (24/04/2026):
+ * - ✅ configurarBindings: VBox → Pane (overlay agora é Pane)
  */
 public class AlertaPosicionador {
 
@@ -28,7 +30,6 @@ public class AlertaPosicionador {
         }
     }
 
-    /** Posiciona relativo a um nó específico */
     private static void posicionarRelativoAoNode(Stage alertStage, Node node,
                                                  double largura, double altura) {
         Window ownerWindow = node.getScene().getWindow();
@@ -41,7 +42,6 @@ public class AlertaPosicionador {
         alertStage.setY(Math.max(0, y));
     }
 
-    /** Posiciona no centro da janela principal */
     private static void posicionarNoCentroPrincipal(Stage alertStage, Stage primary,
                                                     double largura, double altura) {
         double centerX = primary.getX() + primary.getWidth() / 2 - largura / 2;
@@ -51,7 +51,6 @@ public class AlertaPosicionador {
         alertStage.setY(centerY);
     }
 
-    /** Posiciona no canto da tela quando não há referência */
     private static void posicionarNoCantoTela(Stage alertStage, double largura, double altura) {
         Screen tela = Screen.getPrimary();
         Rectangle2D bounds = tela.getVisualBounds();
@@ -60,8 +59,6 @@ public class AlertaPosicionador {
         alertStage.setY(20);
     }
 
-
-    /** Obtém o nó raiz para overlay */
     public static Node obterRootNode(Node ownerNode, Stage primaryStage) {
         if (ownerNode != null && ownerNode.getScene() != null) {
             return ownerNode.getScene().getRoot();
@@ -71,11 +68,11 @@ public class AlertaPosicionador {
         return null;
     }
 
-    /** Configura bindings do overlay */
-    public static void configurarBindings(VBox overlay, Pane root) {
-        if (root instanceof Region) {
-            overlay.prefWidthProperty().bind(((Region) root).widthProperty());
-            overlay.prefHeightProperty().bind(((Region) root).heightProperty());
+    /** ✅ Configura bindings do overlay (Pane, não mais VBox) */
+    public static void configurarBindings(Pane overlay, Pane root) {
+        if (root instanceof Region region) {
+            overlay.prefWidthProperty().bind(region.widthProperty());
+            overlay.prefHeightProperty().bind(region.heightProperty());
         }
     }
 }

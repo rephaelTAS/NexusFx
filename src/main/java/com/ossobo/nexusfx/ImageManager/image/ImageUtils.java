@@ -1,9 +1,9 @@
 package com.ossobo.nexusfx.ImageManager.image;
 
-
 import com.ossobo.nexusfx.di.annotations.Component;
 import com.ossobo.nexusfx.di.annotations.ScopeAnnotation;
-import com.ossobo.nexusfx.di.scopes.ScopeType;
+import com.ossobo.nexusfx.di.scopes.enums.ScopeType;
+
 
 /**
  * 🎯 IMAGE UTILS - Classe utilitária para validações comuns

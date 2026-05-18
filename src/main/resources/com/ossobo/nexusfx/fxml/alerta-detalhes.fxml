@@ -6,7 +6,7 @@
 
 <BorderPane xmlns="http://javafx.com/javafx"
             xmlns:fx="http://javafx.com/fxml/1"
-            fx:controller="packt.frameworks.nexusfx.AlertSystem.fx.AlertaDetalhesController"
+            fx:controller="com.ossobo.nexusfx.AlertSystem.fx.AlertaDetalhesController"
             stylesheets="@../style/detailss.css">
 
     <center>

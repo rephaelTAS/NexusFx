@@ -1,7 +1,10 @@
 package com.ossobo.nexusfx.di.exceptions;
 
-public class CircularDependencyException extends DependencyInjectionException {
-    public CircularDependencyException(String message) {
-        super(message);
+/**
+ * Lançada quando o resolvedor detecta um ciclo infinito de dependências.
+ */
+public class CircularDependencyException extends RuntimeException {
+    public CircularDependencyException(String dependencyCycle) {
+        super("Dependência Circular Detectada: " + dependencyCycle);
     }
 }

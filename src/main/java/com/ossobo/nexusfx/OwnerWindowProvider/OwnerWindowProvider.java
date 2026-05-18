@@ -4,7 +4,8 @@ package com.ossobo.nexusfx.OwnerWindowProvider;
 import com.ossobo.nexusfx.di.DiContainer;
 import com.ossobo.nexusfx.di.annotations.Component;
 import com.ossobo.nexusfx.di.annotations.ScopeAnnotation;
-import com.ossobo.nexusfx.di.scopes.ScopeType;
+
+import com.ossobo.nexusfx.di.scopes.enums.ScopeType;
 import javafx.application.Platform;
 import javafx.scene.Node;
 import javafx.stage.Stage;

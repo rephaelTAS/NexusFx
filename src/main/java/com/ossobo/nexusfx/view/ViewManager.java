@@ -1,28 +1,22 @@
+// ViewManager.java v9.0
+// Responsabilidade: Gerenciar carregamento de views e alertas
+// Fonte única da verdade: ResourceAPI → ResourceRegistry
 package com.ossobo.nexusfx.view;
-
-/**
- * ===== ViewManager.java (v8.4) =====
- * PACOTE: com.ossobo.nexusfx.view
- *
- * v8.4 - ADAPTADO AO ViewDescriptor CORRETO (resources.descriptor)
- * ✅ Usa com.ossobo.nexusfx.resources.descriptor.ViewDescriptor
- * ✅ Métodos adaptados: getId(), getFxmlUrl(), getPrimaryCss(), getCssMode()
- * ✅ Lógica existente 100% preservada
- */
 
 import com.ossobo.nexusfx.di.annotations.Component;
 import com.ossobo.nexusfx.di.annotations.ScopeAnnotation;
-import com.ossobo.nexusfx.di.scopes.ScopeType;
+import com.ossobo.nexusfx.di.scopes.enums.ScopeType;
+import com.ossobo.nexusfx.resources.api.ResourceAPI;
 import com.ossobo.nexusfx.resources.descriptor.ViewDescriptor;
-import com.ossobo.nexusfx.view.design.StyleDefinition;
-import com.ossobo.nexusfx.view.design.StyleDefinition.CssMode;
+import com.ossobo.nexusfx.view.design.StyleManager;
 import com.ossobo.nexusfx.view.loader.FXMLService;
+import com.ossobo.nexusfx.view.loader.LoadedView;
 import com.ossobo.nexusfx.view.refresh.RefreshManager;
 import com.ossobo.nexusfx.view.refresh.RefreshableController;
-import com.ossobo.nexusfx.view.registry.ViewRegistry;
-import com.ossobo.nexusfx.view.views.LoadedView;
+
 import javafx.scene.Parent;
 import javafx.scene.layout.Pane;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,11 +24,17 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
+/**
+ * 🎯 ViewManager v9.0
+ *
+ * Fonte única da verdade: ResourceAPI → ResourceRegistry.
+ * ViewRegistry (obsoleto) removido.
+ */
 @Component
 @ScopeAnnotation(ScopeType.SINGLETON)
 public final class ViewManager {
-    private static final Logger LOGGER = LoggerFactory.getLogger(ViewManager.class);
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(ViewManager.class);
     private static volatile ViewManager instance;
 
     public static ViewManager getInstance() {
@@ -48,10 +48,10 @@ public final class ViewManager {
         return instance;
     }
 
-    private final ViewRegistry viewRegistry;
+    private ResourceAPI resourceAPI;
     private final FXMLService fxmlService;
+    private final StyleManager styleManager;
     private final RefreshManager refreshManager;
-
     private final Map<String, LoadedView<?>> viewCache = new ConcurrentHashMap<>();
 
     private int cacheHits = 0;
@@ -60,25 +60,44 @@ public final class ViewManager {
     private int dialogRequests = 0;
 
     private ViewManager() {
-        this.viewRegistry = ViewRegistry.getInstance();
         this.fxmlService = new FXMLService();
+        this.styleManager = StyleManager.getInstance();
         this.refreshManager = new RefreshManager();
-
-        LOGGER.info("🚀 ViewManager v8.4 - Adaptado ao ViewDescriptor (resources.descriptor)");
+        LOGGER.info("🚀 ViewManager v9.0 — Fonte: ResourceAPI");
     }
 
-    // ==================== API PÚBLICA - VIEWS NORMAIS ====================
+    // ==================== VÍNCULO COM RESOURCE API ====================
+
+    public void setResourceAPI(ResourceAPI api) {
+        this.resourceAPI = api;
+        LOGGER.info("✅ ResourceAPI vinculado ao ViewManager");
+    }
+
+    // ==================== RESOLUÇÃO DE DESCRITORES ====================
+
+    private ViewDescriptor obterView(String viewId) {
+        if (resourceAPI == null) {
+            throw new IllegalStateException("ResourceAPI não vinculado ao ViewManager");
+        }
+        return resourceAPI.getViewDescriptor(viewId)
+                .orElseThrow(() -> new IllegalArgumentException("View não registrada: " + viewId));
+    }
+
+    private ViewDescriptor obterAlerta(String alertId) {
+        if (resourceAPI == null) {
+            throw new IllegalStateException("ResourceAPI não vinculado ao ViewManager");
+        }
+        return resourceAPI.getAlertDescriptor(alertId)
+                .orElseThrow(() -> new IllegalArgumentException("Alerta não registrado: " + alertId));
+    }
+
+    // ==================== API PÚBLICA — VIEWS (COM CACHE) ====================
 
     public LoadedView<Object> loadView(String viewId) {
-        return loadView(viewId, Object.class, null);
+        return loadView(viewId, Object.class);
     }
 
     public <T> LoadedView<T> loadView(String viewId, Class<T> controllerType) {
-        return loadView(viewId, controllerType, null);
-    }
-
-    public <T> LoadedView<T> loadView(String viewId, Class<T> controllerType, String customCssPath) {
-        validateViewId(viewId);
         totalRequests++;
 
         @SuppressWarnings("unchecked")
@@ -92,10 +111,9 @@ public final class ViewManager {
         cacheMisses++;
         LOGGER.debug("🔄 CACHE MISS: {} (criando nova)", viewId);
 
-        ViewDescriptor descriptor = viewRegistry.getViewDescriptor(viewId);
+        ViewDescriptor descriptor = obterView(viewId);
         LoadedView<T> loadedView = fxmlService.load(descriptor, controllerType);
-
-        applyStylesViaStyleDefinition(loadedView.getRoot(), descriptor, customCssPath);
+        styleManager.apply(loadedView.getRoot(), descriptor);
 
         viewCache.put(viewId, loadedView);
         registerForRefreshIfDynamic(viewId, loadedView, descriptor);
@@ -103,135 +121,50 @@ public final class ViewManager {
         return loadedView;
     }
 
-    // ==================== DIÁLOGOS (ALWAYS-FRESH) ====================
+    // ==================== API PÚBLICA — ALERTAS (ALWAYS-FRESH) ====================
+
+    public <T> LoadedView<T> loadAlert(String alertId, Class<T> controllerType) {
+        if (alertId == null || alertId.trim().isEmpty()) {
+            throw new IllegalArgumentException("Alert ID não pode ser nulo ou vazio");
+        }
+        dialogRequests++;
+        LOGGER.debug("⚠️ Carregando alerta: {}", alertId);
+
+        ViewDescriptor descriptor = obterAlerta(alertId);
+        LoadedView<T> loadedView = fxmlService.loadFresh(descriptor, controllerType, null);
+        styleManager.apply(loadedView.getRoot(), descriptor);
+
+        LOGGER.info("✅ Alerta carregado: {}", alertId);
+        return loadedView;
+    }
+
+    // ==================== API PÚBLICA — DIÁLOGOS (ALWAYS-FRESH) ====================
 
     public LoadedView<Object> loadFreshView(String viewId) {
-        return loadFreshViewInternal(viewId, Object.class, null, null);
+        return loadFreshView(viewId, Object.class, null);
     }
 
     @SuppressWarnings("unchecked")
     public <T> LoadedView<T> loadFreshView(String viewId, Consumer<T> configurator) {
-        return (LoadedView<T>) loadFreshViewInternal(viewId, Object.class, null,
-                (Consumer<Object>) configurator);
+        return (LoadedView<T>) loadFreshViewInternal(viewId, (Class<T>) Object.class, configurator);
     }
 
     public <T> LoadedView<T> loadFreshView(String viewId, Class<T> controllerType,
                                            Consumer<T> configurator) {
-        return loadFreshViewInternal(viewId, controllerType, null, configurator);
+        return loadFreshViewInternal(viewId, controllerType, configurator);
     }
 
     private <T> LoadedView<T> loadFreshViewInternal(String viewId, Class<T> controllerType,
-                                                    String customCssPath, Consumer<T> configurator) {
-        validateViewId(viewId);
+                                                    Consumer<T> configurator) {
         dialogRequests++;
-
         LOGGER.debug("💬 Diálogo (always-fresh): {}", viewId);
 
-        ViewDescriptor descriptor = viewRegistry.getViewDescriptor(viewId);
+        ViewDescriptor descriptor = obterView(viewId);
         LoadedView<T> loadedView = fxmlService.loadFresh(descriptor, controllerType, configurator);
-
-        applyStylesViaStyleDefinition(loadedView.getRoot(), descriptor, customCssPath);
+        styleManager.apply(loadedView.getRoot(), descriptor);
 
         LOGGER.info("✅ Diálogo criado (fresh): {}", viewId);
         return loadedView;
-    }
-
-    // ==================== FLUXO DE ESTILOS (ADAPTADO) ====================
-
-    /**
-     * ✅ ADAPTADO: Usa métodos corretos do ViewDescriptor
-     * - descriptor.getId() em vez de getViewId()
-     * - descriptor.getPrimaryCss() em vez de getCssPath()
-     */
-    private void applyStylesViaStyleDefinition(Parent root, ViewDescriptor descriptor,
-                                               String customCssPath) {
-        try {
-            // ✅ USA getPrimaryCss() em vez de getCssPath()
-            String cssPath = customCssPath != null ? customCssPath :
-                    (descriptor.getPrimaryCss() != null ? descriptor.getPrimaryCss().toString() : null);
-
-            // ✅ USA getCssMode() que retorna ViewDescriptor.CssMode
-            CssMode mode = mapToCssMode(descriptor.getCssMode());
-
-            StyleDefinition.Builder builder = StyleDefinition.create();
-
-            if (cssPath != null && !cssPath.isEmpty()) {
-                builder.withCustomCss(cssPath);
-            }
-
-            builder.withMode(mode)
-                    .build()
-                    .applyTo(root);
-
-            // ✅ USA getId() em vez de getViewId()
-            LOGGER.debug("🎨 Estilos aplicados via StyleDefinition: {} (modo: {})",
-                    descriptor.getId(), mode);
-
-        } catch (Exception e) {
-            LOGGER.warn("⚠️ Falha ao aplicar estilos via StyleDefinition: {}", e.getMessage());
-            applyFallbackStyles(root);
-        }
-    }
-
-    // ==================== API PÚBLICA DE ESTILOS ====================
-
-    public void applyDesignSystemToHierarchy(Parent root) {
-        if (root == null) {
-            throw new IllegalArgumentException("Root não pode ser nulo");
-        }
-
-        LOGGER.debug("🎨 Aplicando DesignSystem à hierarquia via ViewManager");
-
-        // ✅ Usa construtor correto do ViewDescriptor
-        ViewDescriptor globalDescriptor = new ViewDescriptor(
-                "__global_styling__",
-                null,
-                Object.class,
-                null,
-                null,
-                ViewDescriptor.CssMode.NONE,
-                ViewDescriptor.ViewType.STATIC,
-                com.ossobo.nexusfx.resources.enums.ResourceOrigin.FRAMEWORK
-        );
-
-        applyStylesViaStyleDefinition(root, globalDescriptor, null);
-    }
-
-    public void applyDesignSystemToHierarchy(Parent root, String viewId) {
-        if (root == null) {
-            throw new IllegalArgumentException("Root não pode ser nulo");
-        }
-
-        LOGGER.debug("🎨 Aplicando DesignSystem à view: {}", viewId);
-
-        ViewDescriptor globalDescriptor = new ViewDescriptor(
-                viewId != null ? viewId : "__unknown__",
-                null,
-                Object.class,
-                null,
-                null,
-                ViewDescriptor.CssMode.NONE,
-                ViewDescriptor.ViewType.STATIC,
-                com.ossobo.nexusfx.resources.enums.ResourceOrigin.FRAMEWORK
-        );
-
-        applyStylesViaStyleDefinition(root, globalDescriptor, null);
-    }
-
-    // ==================== MAPEAMENTO DE CSS MODE ====================
-
-    /**
-     * ✅ ADAPTADO: ViewDescriptor.CssMode é do pacote resources.descriptor
-     */
-    private CssMode mapToCssMode(ViewDescriptor.CssMode descriptorMode) {
-        if (descriptorMode == null) return CssMode.AUTO;
-
-        switch (descriptorMode) {
-            case NONE: return CssMode.AUTO;
-            case REPLACE: return CssMode.CUSTOM_ONLY;
-            case APPEND: return CssMode.AUTO;
-            default: return CssMode.AUTO;
-        }
     }
 
     // ==================== MÉTODOS DE COMPATIBILIDADE ====================
@@ -239,9 +172,7 @@ public final class ViewManager {
     @SuppressWarnings("unchecked")
     public <T> LoadedView<Object> loadDynamicViewWithController(String viewId,
                                                                 Consumer<T> controllerConfigurator) {
-        validateViewId(viewId);
         removeFromCache(viewId);
-
         LoadedView<Object> loadedView = loadView(viewId, Object.class);
 
         if (controllerConfigurator != null && loadedView.getController() != null) {
@@ -295,7 +226,6 @@ public final class ViewManager {
 
     private void registerForRefreshIfDynamic(String viewId, LoadedView<?> loadedView,
                                              ViewDescriptor descriptor) {
-        // ✅ USA getViewType() em vez de isDynamic()
         if (descriptor.getViewType() == ViewDescriptor.ViewType.DYNAMIC
                 && loadedView.getController() != null) {
             refreshManager.register(viewId, loadedView.getRoot(), loadedView.getController());
@@ -304,9 +234,9 @@ public final class ViewManager {
     }
 
     private void invokeRefreshIfRefreshable(Object controller, String viewId) {
-        if (controller instanceof RefreshableController) {
+        if (controller instanceof RefreshableController refreshable) {
             try {
-                ((RefreshableController) controller).refreshData();
+                refreshable.refreshData();
                 LOGGER.debug("🔄 Refresh invocado em: {}", viewId);
             } catch (Exception e) {
                 LOGGER.warn("⚠️ Falha ao fazer refresh da view '{}': {}", viewId, e.getMessage());
@@ -334,29 +264,6 @@ public final class ViewManager {
             configurator.accept(loadedView.getController());
         }
         return loadedView;
-    }
-
-    private void applyFallbackStyles(Parent root) {
-        try {
-            root.getStylesheets().clear();
-            String fallback = "/com/ossobo/nexusfx/styles/fallback.css";
-            if (getClass().getResource(fallback) != null) {
-                root.getStylesheets().add(getClass().getResource(fallback).toExternalForm());
-            }
-        } catch (Exception e) {
-            // Silêncio
-        }
-    }
-
-    // ==================== VALIDAÇÃO ====================
-
-    private void validateViewId(String viewId) {
-        if (viewId == null || viewId.trim().isEmpty()) {
-            throw new IllegalArgumentException("View ID não pode ser nulo ou vazio");
-        }
-        if (!viewRegistry.isRegistered(viewId)) {
-            throw new IllegalArgumentException("View não registrada: " + viewId);
-        }
     }
 
     // ==================== MÉTODOS ESTÁTICOS ====================

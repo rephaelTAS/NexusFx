@@ -7,7 +7,7 @@
 
     <groupId>com.ossobo</groupId>
     <artifactId>NexusFX</artifactId>
-    <version>8.0.3</version>
+    <version>10.0.1</version>
     <packaging>jar</packaging>
 
     <name>NexusFX</name>
@@ -32,12 +32,6 @@
         </developer>
     </developers>
 
-    <!-- Controle de versão -->
-    <scm>
-        <connection>scm:git:git://github.com/rephaelTAS/NexusFX.git</connection>
-        <developerConnection>scm:git:ssh://github.com/rephaelTAS/NexusFX.git</developerConnection>
-        <url>https://github.com/rephaelTAS/NexusFX/tree/main</url>
-    </scm>
 
     <!-- ===== PROPRIEDADES CENTRALIZADAS ===== -->
     <properties>
@@ -47,7 +41,7 @@
         <java.version>25</java.version>
 
         <!-- JavaFX -->
-        <javafx.version>25.0.2</javafx.version>
+        <javafx.version>25.0.3</javafx.version>
 
         <!-- Testing -->
         <junit.version>5.10.2</junit.version>
@@ -70,7 +64,7 @@
         <tilesfx.version>21.0.9</tilesfx.version>
 
         <!-- Build Plugins -->
-        <maven.compiler.plugin.version>3.13.0</maven.compiler.plugin.version>
+        <maven.compiler.plugin.version>3.15.0</maven.compiler.plugin.version>
         <maven.source.plugin.version>3.3.0</maven.source.plugin.version>
         <maven.javadoc.plugin.version>3.6.0</maven.javadoc.plugin.version>
         <maven.jar.plugin.version>3.3.0</maven.jar.plugin.version>
@@ -105,6 +99,11 @@
             <version>0.10.2</version>
         </dependency>
 
+        <dependency>
+            <groupId>io.github.classgraph</groupId>
+            <artifactId>classgraph</artifactId>
+            <version>4.8.168</version>
+        </dependency>
         <!-- ===== JAVAFX CORE (PROVIDED) ===== -->
         <dependency>
             <groupId>org.openjfx</groupId>

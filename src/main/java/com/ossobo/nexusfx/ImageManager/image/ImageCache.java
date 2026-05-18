@@ -2,7 +2,8 @@ package com.ossobo.nexusfx.ImageManager.image;
 
 import com.ossobo.nexusfx.di.annotations.Component;
 import com.ossobo.nexusfx.di.annotations.ScopeAnnotation;
-import com.ossobo.nexusfx.di.scopes.ScopeType;
+
+import com.ossobo.nexusfx.di.scopes.enums.ScopeType;
 import javafx.scene.image.Image;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

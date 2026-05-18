@@ -14,25 +14,26 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * 🎵 ALERTA SONS - ADAPTADO AO RESOURCE API
+ * 🎵 Sistema de sons dos alertas.
+ * Integrado ao ResourceAPI para busca de sons registrados.
  *
- * v2.0 (22/04/2026):
- * - ✅ Busca sons do ResourceAPI (datacenter)
- * - ✅ Mantém fallback para paths locais
- * - ✅ Compatível com API existente
+ * v2.2 (24/04/2026):
+ * - ✅ tocarSomUrl() recebe URL direta do AlertDescriptor
+ * - ✅ REMOVIDO: carregarPorPathFallback() e paths hardcoded
+ * - ✅ REMOVIDO: carregarSom() com múltiplas tentativas de path
+ * - ✅ Inicialização exclusivamente via ResourceAPI
+ * - ✅ Fallback de path removido — tudo via ResourceAPI
  */
 public class AlertaSons {
     private static final Map<String, MediaPlayer> mediaPlayers = new HashMap<>();
     private static final Map<String, AudioClip> audioClips = new HashMap<>();
 
-    // ✅ NOVO: ResourceAPI (datacenter)
     private static ResourceAPI resourceAPI;
 
-    // Mapeamento de nomes de som → IDs no ResourceAPI
+    /** Mapeamento de nomes internos de som → IDs no ResourceAPI */
     private static final Map<String, String> SOM_PARA_RESOURCE_ID = new HashMap<>();
 
     static {
-        // Mapear nomes de som para IDs registrados no ResourceAPI
         SOM_PARA_RESOURCE_ID.put("info", "fx-sound-info");
         SOM_PARA_RESOURCE_ID.put("warn", "fx-sound-warning");
         SOM_PARA_RESOURCE_ID.put("erro", "fx-sound-error");
@@ -42,16 +43,21 @@ public class AlertaSons {
         SOM_PARA_RESOURCE_ID.put("confirmacao_perigo", "fx-sound-warning");
         SOM_PARA_RESOURCE_ID.put("confirmacao_aviso", "fx-sound-warning");
         SOM_PARA_RESOURCE_ID.put("confirmacao_info", "fx-sound-info");
-        SOM_PARA_RESOURCE_ID.put("confirmacao_sucesso", "fx-sound-info"); // fallback
+        SOM_PARA_RESOURCE_ID.put("confirmacao_sucesso", "fx-sound-info");
     }
 
     private static double volumeGeral = 0.7;
     private static boolean inicializado = false;
 
+    private AlertaSons() {
+        // Classe utilitária
+    }
+
     // ==================== INTEGRAÇÃO COM RESOURCE API ====================
 
     /**
-     * ✅ Víncula ResourceAPI ao sistema de sons
+     * Víncula o ResourceAPI ao sistema de sons.
+     * Chamado pelo AlertaSystem durante o bootstrap.
      */
     public static void setResourceAPI(ResourceAPI api) {
         resourceAPI = api;
@@ -59,35 +65,36 @@ public class AlertaSons {
     }
 
     /**
-     * ✅ Obtém URL do som via ResourceAPI
+     * Obtém URL do som via ResourceAPI pelo nome interno.
+     * Retorna null se não encontrado.
      */
     private static URL obterUrlDoResource(String nomeSom) {
-        if (resourceAPI == null) {
-            return null;
-        }
+        if (resourceAPI == null) return null;
 
         String resourceId = SOM_PARA_RESOURCE_ID.get(nomeSom);
-        if (resourceId == null) {
-            return null;
-        }
+        if (resourceId == null) return null;
 
         try {
             if (resourceAPI.exists(resourceId, ResourceType.SOUND)) {
                 return resourceAPI.getSoundUrl(resourceId);
             }
         } catch (Exception e) {
-            // Fallback para paths locais
+            System.err.println("⚠️ Erro ao buscar som '" + resourceId + "': " + e.getMessage());
         }
 
         return null;
     }
 
-    /** Inicializa os recursos de áudio */
+    // ==================== INICIALIZAÇÃO ====================
+
+    /**
+     * Inicializa o sistema de sons carregando todos os sons do ResourceAPI.
+     * Seguro para chamadas múltiplas (idempotente).
+     */
     public static synchronized void inicializar() {
         if (inicializado) return;
 
         try {
-            // Carregar sons via ResourceAPI (prioridade) ou fallback
             carregarSomPorNome("info");
             carregarSomPorNome("warn");
             carregarSomPorNome("erro");
@@ -103,42 +110,24 @@ public class AlertaSons {
         }
     }
 
-    /** Carrega um som por nome (prioriza ResourceAPI) */
+    /**
+     * Carrega um som pelo nome interno via ResourceAPI.
+     */
     private static void carregarSomPorNome(String nome) {
-        // 1. Tentar ResourceAPI
         URL url = obterUrlDoResource(nome);
-
-        // 2. Fallback: tentar carregar por path
-        if (url == null) {
-            url = carregarPorPathFallback(nome);
-        }
-
         if (url != null) {
             registrarSom(nome, url);
+        } else {
+            System.err.println("⚠️ Som não encontrado no ResourceAPI: " + nome);
         }
     }
 
-    /** Fallback para paths antigos */
-    private static URL carregarPorPathFallback(String nome) {
-        // Mapeamento de paths antigos
-        Map<String, String> pathsFallback = new HashMap<>();
-        pathsFallback.put("info", "/com/ossobo/nexusfx/assets/sound/info.mp3");
-        pathsFallback.put("warn", "/com/ossobo/nexusfx/assets/sound/warning.mp3");
-        pathsFallback.put("erro", "/com/ossobo/nexusfx/assets/sound/error.mp3");
-        pathsFallback.put("critical", "/com/ossobo/nexusfx/assets/sound/critical.mp3");
-        pathsFallback.put("confirmation", "/com/ossobo/nexusfx/assets/sound/confirmation.mp3");
-
-        String path = pathsFallback.get(nome);
-        if (path != null) {
-            return AlertaSons.class.getResource(path);
-        }
-        return null;
-    }
-
-    /** Registra um som carregado */
+    /**
+     * Registra um som carregado no cache interno.
+     */
     private static void registrarSom(String nome, URL url) {
         try {
-            String urlString = url.toString();
+            String urlString = url.toExternalForm();
 
             if (urlString.toLowerCase().endsWith(".mp3")) {
                 Media media = new Media(urlString);
@@ -157,63 +146,58 @@ public class AlertaSons {
         }
     }
 
-    /** Carrega um som com múltiplas tentativas (mantido para compatibilidade) */
-    private static void carregarSom(String nome, String caminho) {
-        // Se já temos o som via ResourceAPI, ignorar
-        if (mediaPlayers.containsKey(nome) || audioClips.containsKey(nome)) {
-            return;
-        }
+    // ==================== TOCAR SONS ====================
 
-        try {
-            // Tentar ResourceAPI primeiro
-            URL url = obterUrlDoResource(nome);
+    /**
+     * ✅ Toca som a partir de uma URL direta.
+     * Usado pelo AlertaSystem quando o AlertDescriptor já fornece a URL.
+     */
+    public static void tocarSomUrl(URL soundUrl) {
+        if (soundUrl == null) return;
+        if (!inicializado) inicializar();
 
-            // Fallback para caminho passado
-            if (url == null) {
-                url = AlertaSons.class.getResource(caminho);
+        javafx.application.Platform.runLater(() -> {
+            try {
+                String urlString = soundUrl.toExternalForm();
+                if (urlString.toLowerCase().endsWith(".mp3")) {
+                    Media media = new Media(urlString);
+                    MediaPlayer player = new MediaPlayer(media);
+                    player.setVolume(volumeGeral);
+                    player.setCycleCount(1);
+                    player.setOnEndOfMedia(() -> player.dispose());
+                    player.play();
+                } else {
+                    AudioClip clip = new AudioClip(urlString);
+                    clip.setVolume(volumeGeral);
+                    clip.setCycleCount(1);
+                    clip.play();
+                }
+            } catch (Exception e) {
+                System.err.println("⚠️ Falha ao tocar som: " + e.getMessage());
             }
-
-            // Tentar caminho alternativo
-            if (url == null) {
-                String caminhoAlternativo = caminho.replace("/packt/frameworks/nexusfx/AlertSystem/fx/assets/sound/",
-                        "/com/ossobo/nexusfx/assets/sound/");
-                url = AlertaSons.class.getResource(caminhoAlternativo);
-            }
-
-            // Tentar fallback para WAV
-            if (url == null) {
-                String caminhoWAV = caminho.replace(".mp3", ".wav");
-                url = AlertaSons.class.getResource(caminhoWAV);
-            }
-
-            if (url != null) {
-                registrarSom(nome, url);
-            }
-
-        } catch (Exception e) {
-            // Silencioso
-        }
+        });
     }
 
-    /** Tocar som baseado no tipo de alerta */
+    /**
+     * Toca som baseado no tipo de alerta.
+     * Usado como fallback quando o AlertDescriptor não tem som.
+     */
     public static void tocarSom(TipoAlerta tipo) {
-        if (!inicializado) {
-            inicializar();
-        }
+        if (!inicializado) inicializar();
 
         String nomeSom = tipo.name().toLowerCase();
         tocarSomPorNome(nomeSom);
     }
 
-    /** Tocar som de confirmação baseado no tipo */
+    /**
+     * Toca som de confirmação baseado no tipo.
+     * Usado como fallback quando o AlertDescriptor não tem som.
+     */
     public static void tocarSomConfirmacao(TipoConfirmacao tipo) {
-        if (!inicializado) {
-            inicializar();
-        }
+        if (!inicializado) inicializar();
 
         String nomeSom = "confirmacao_" + tipo.name().toLowerCase();
 
-        // Se não houver som específico, usar padrão
         if (!somDisponivel(nomeSom)) {
             nomeSom = "confirmation";
         }
@@ -221,10 +205,12 @@ public class AlertaSons {
         tocarSomPorNome(nomeSom);
     }
 
-    /** Método interno para tocar som por nome */
+    /**
+     * Toca um som pelo nome interno.
+     */
     private static void tocarSomPorNome(String nomeSom) {
         javafx.application.Platform.runLater(() -> {
-            // Tentar MediaPlayer primeiro (MP3)
+            // Tentar MediaPlayer (MP3)
             MediaPlayer player = mediaPlayers.get(nomeSom);
             if (player != null) {
                 if (player.getStatus() == MediaPlayer.Status.PLAYING) {
@@ -252,18 +238,18 @@ public class AlertaSons {
                 return;
             }
 
-            // Tentar fallback genérico
+            // Fallback genérico para confirmações não mapeadas
             if (nomeSom.startsWith("confirmacao_")) {
                 tocarSomPorNome("confirmation");
             }
         });
     }
 
-    /** Tocar som personalizado */
+    /**
+     * Toca um som personalizado por ID do ResourceAPI ou caminho.
+     */
     public static void tocarSomPersonalizado(String caminhoOuId) {
-        if (!inicializado) {
-            inicializar();
-        }
+        if (!inicializado) inicializar();
 
         javafx.application.Platform.runLater(() -> {
             try {
@@ -274,32 +260,20 @@ public class AlertaSons {
                     url = resourceAPI.getSoundUrl(caminhoOuId);
                 }
 
-                // Fallback: tentar como caminho
-                if (url == null) {
-                    url = AlertaSons.class.getResource(caminhoOuId);
-                }
-
                 if (url != null) {
-                    String urlString = url.toString();
-                    if (urlString.toLowerCase().endsWith(".mp3")) {
-                        Media media = new Media(urlString);
-                        MediaPlayer player = new MediaPlayer(media);
-                        player.setVolume(volumeGeral);
-                        player.setCycleCount(1);
-                        player.play();
-                    } else {
-                        AudioClip clip = new AudioClip(urlString);
-                        clip.setVolume(volumeGeral);
-                        clip.play();
-                    }
+                    tocarSomUrl(url);
                 }
             } catch (Exception e) {
-                // Silencioso
+                System.err.println("⚠️ Falha ao tocar som personalizado: " + e.getMessage());
             }
         });
     }
 
-    /** Define volume geral (0.0 a 1.0) */
+    // ==================== CONTROLE DE VOLUME ====================
+
+    /**
+     * Define o volume geral (0.0 a 1.0).
+     */
     public static void setVolumeGeral(double volume) {
         volumeGeral = Math.max(0.0, Math.min(1.0, volume));
 
@@ -312,7 +286,11 @@ public class AlertaSons {
         );
     }
 
-    /** Para todos os sons */
+    // ==================== PARAR SONS ====================
+
+    /**
+     * Para todos os sons em execução.
+     */
     public static void pararTodos() {
         mediaPlayers.values().forEach(player -> {
             if (player.getStatus() == MediaPlayer.Status.PLAYING) {
@@ -321,7 +299,9 @@ public class AlertaSons {
         });
     }
 
-    /** Para um som específico */
+    /**
+     * Para um som específico pelo nome.
+     */
     public static void pararSom(String nome) {
         MediaPlayer player = mediaPlayers.get(nome);
         if (player != null && player.getStatus() == MediaPlayer.Status.PLAYING) {
@@ -329,25 +309,26 @@ public class AlertaSons {
         }
     }
 
-    /** Verifica se um som está disponível */
+    // ==================== CONSULTA ====================
+
+    /**
+     * Verifica se um som está disponível (cache ou ResourceAPI).
+     */
     public static boolean somDisponivel(String nome) {
-        // Verificar cache local
         if (mediaPlayers.containsKey(nome) || audioClips.containsKey(nome)) {
             return true;
         }
 
-        // Verificar ResourceAPI
         String resourceId = SOM_PARA_RESOURCE_ID.get(nome);
         return resourceAPI != null && resourceId != null &&
                 resourceAPI.exists(resourceId, ResourceType.SOUND);
     }
 
-    /** Pré-carrega um som específico */
-    public static void preCarregarSom(String nome, String caminho) {
-        carregarSom(nome, caminho);
-    }
+    // ==================== GERENCIAMENTO DE MEMÓRIA ====================
 
-    /** Remove um som da memória */
+    /**
+     * Remove um som do cache.
+     */
     public static void liberarSom(String nome) {
         MediaPlayer player = mediaPlayers.remove(nome);
         if (player != null) {
@@ -356,7 +337,9 @@ public class AlertaSons {
         audioClips.remove(nome);
     }
 
-    /** Reinicializa o sistema de sons */
+    /**
+     * Reinicializa completamente o sistema de sons.
+     */
     public static void reinicializar() {
         pararTodos();
         mediaPlayers.values().forEach(MediaPlayer::dispose);
@@ -369,23 +352,35 @@ public class AlertaSons {
     // ==================== DIAGNÓSTICO ====================
 
     /**
-     * ✅ Diagnóstico do sistema de sons
+     * Diagnóstico completo do sistema de sons.
      */
     public static void diagnosticar() {
         System.out.println("\n🔊 ALERTA SONS - DIAGNÓSTICO");
         System.out.println("=".repeat(50));
         System.out.println("• ResourceAPI: " + (resourceAPI != null ? "✅ Vinculado" : "❌ Não vinculado"));
-        System.out.println("• Inicializado: " + inicializado);
+        System.out.println("• Inicializado: " + (inicializado ? "✅ Sim" : "❌ Não"));
         System.out.println("• Volume: " + (volumeGeral * 100) + "%");
-        System.out.println("• MediaPlayers: " + mediaPlayers.size());
-        System.out.println("• AudioClips: " + audioClips.size());
+        System.out.println("• MediaPlayers em cache: " + mediaPlayers.size());
+        System.out.println("• AudioClips em cache: " + audioClips.size());
+
+        System.out.println("\n📋 SONS EM CACHE:");
+        if (mediaPlayers.isEmpty() && audioClips.isEmpty()) {
+            System.out.println("  (nenhum)");
+        } else {
+            mediaPlayers.keySet().forEach(nome ->
+                    System.out.println("  • " + nome + " [MediaPlayer]"));
+            audioClips.keySet().forEach(nome ->
+                    System.out.println("  • " + nome + " [AudioClip]"));
+        }
 
         if (resourceAPI != null) {
             System.out.println("\n📋 SONS NO RESOURCE API:");
             resourceAPI.listIdsByType(ResourceType.SOUND).forEach(id ->
-                    System.out.println("  • " + id + " → " + resourceAPI.exists(id))
+                    System.out.println("  • " + id + " → " +
+                            (resourceAPI.exists(id) ? "✅ Disponível" : "❌ Indisponível"))
             );
         }
+
         System.out.println("=".repeat(50));
     }
 }

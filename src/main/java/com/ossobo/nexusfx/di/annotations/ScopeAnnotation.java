@@ -3,7 +3,8 @@ package com.ossobo.nexusfx.di.annotations;
 
 
 
-import com.ossobo.nexusfx.di.scopes.ScopeType;
+
+import com.ossobo.nexusfx.di.scopes.enums.ScopeType;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
