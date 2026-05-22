@@ -14,6 +14,7 @@ com.ossobo.nexusfx.di
 com.ossobo.nexusfx.di.annotations
 com.ossobo.nexusfx.di.exceptions
 com.ossobo.nexusfx.di.scopes
+com.ossobo.nexusfx.di.scopes.enums
 com.ossobo.nexusfx.exceptions
 com.ossobo.nexusfx.ImageManager
 com.ossobo.nexusfx.ImageManager.image
@@ -40,12 +41,8 @@ com.ossobo.nexusfx.resources.loader
 com.ossobo.nexusfx.resources.registry
 com.ossobo.nexusfx.resources.resolver
 com.ossobo.nexusfx.view
+com.ossobo.nexusfx.view.config
 com.ossobo.nexusfx.view.design
-com.ossobo.nexusfx.view.design.internal
-com.ossobo.nexusfx.view.design.themes.neumorphic
 com.ossobo.nexusfx.view.exceptios
 com.ossobo.nexusfx.view.loader
 com.ossobo.nexusfx.view.refresh
-com.ossobo.nexusfx.view.registry
-com.ossobo.nexusfx.view.views
-com.ossobo.nexusfx.view.views.config
